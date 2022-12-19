@@ -1,0 +1,5 @@
+name: Wolkenlobby
+version: '${project.version}'
+main: de.cxrdex.wolkenlobby.Wolkenlobby
+api-version: 1.19
+authors: [ CxdexDevelopment ]
