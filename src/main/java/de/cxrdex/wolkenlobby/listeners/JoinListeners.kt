@@ -5,25 +5,27 @@ import com.mongodb.client.model.Filters.eq
 import de.cxrdex.wolkenlobby.Wolkenlobby
 import de.cxrdex.wolkenlobby.utils.Vars
 import net.kyori.adventure.text.Component
+import net.md_5.bungee.api.ChatColor
+import net.md_5.bungee.api.chat.ClickEvent
+import net.md_5.bungee.api.chat.ComponentBuilder
+import net.md_5.bungee.api.chat.HoverEvent
+import net.md_5.bungee.api.chat.TextComponent
 import org.bson.Document
 import org.bukkit.Bukkit
-import org.bukkit.Sound
+import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
-import org.bukkit.potion.PotionEffect
-import org.bukkit.potion.PotionEffectType
-import org.bukkit.scheduler.BukkitRunnable
+import org.bukkit.event.player.PlayerMoveEvent
 import java.util.*
 
 
 class JoinListeners : Listener {
     val TOKEN = "mongodb+srv://theskyscout:RokBhzFJkPBcNz4T@cluster0.scfbc0h.mongodb.net/?retryWrites=true&w=majority"
     val client = MongoClients.create(TOKEN)
-    val db = client.getDatabase("wolkenlos").getCollection("con")
-    val db2 = client.getDatabase("wolkenlos").getCollection("conttry")
-    val betakey = client.getDatabase("wolkenlos").getCollection("activated")
+    val db = client.getDatabase("wolkenlos").getCollection("user")
     var taskID = 0
+    var notRegistered = ArrayList<Player>()
 
     @EventHandler
     fun onJoin(event: PlayerJoinEvent) {
@@ -33,41 +35,84 @@ class JoinListeners : Listener {
         val player = event.player
         val resaults = db.find(eq("mc", "${player.uniqueId}")).first()
         if(resaults == null) {
-            player.addPotionEffect(PotionEffect(PotionEffectType.BLINDNESS, 99999, 255))
-            player.addPotionEffect(PotionEffect(PotionEffectType.SLOW, 99999, 255))
-            player.playSound(player.location, Sound.BLOCK_ANVIL_BREAK, 5F, 5F)
+            notRegistered.add(player)
+            val component: TextComponent = TextComponent("${generatedString}")
+            component.isBold = true
+            component.color = ChatColor.GREEN
+            component.clickEvent = ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, generatedString)
+            component.setHoverEvent(
+                HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
+                    ComponentBuilder("Click to Copy!").color(net.md_5.bungee.api.ChatColor.GRAY).create()
+                )
+            )
+
             player.sendMessage("§8--------------------------------------------------")
-            player.sendMessage(Vars.PREFIX + "§cOoops §7Dein um die Bet zu nutzen\n" +
-                    "§7musst du diesen Code an unseren Discord vot senden\n" +
-                    "§a${generatedString}")
-            db2.insertOne(Document().append("mc", "${player.uniqueId}").append("key", "${generatedString}").append("username", player.name))
+            player.sendMessage(Vars.PREFIX + "§cOoops §7Du musst zu erst dein Account verifzieren\n" +
+                    "§7sende Folgenden Code an unseren Discord Bot")
+            player.sendMessage(component)
+            player.sendMessage("§8--------------------------------------------------")
+            db.insertOne(Document().append("mc", "${player.uniqueId}").append("key", "${generatedString}").append("username", player.name))
+            taskID = Bukkit.getScheduler().scheduleSyncRepeatingTask(Wolkenlobby.plugin, Runnable{
+                val resaults = db.find(eq("mc", "${player.uniqueId}")).first()
+                if(resaults["linked"] != null) {
+                    notRegistered.remove(player)
+                    player.sendMessage("§8--------------------------------------------------")
+                    player.sendMessage(Vars.PREFIX + "§7Danke das du dein Minecraft Account mit Discord verbunden hast!\n" +
+                            "§7Verbundener Discord Account: §a ${resaults["dc-name"]}")
+                    player.sendMessage("§8--------------------------------------------------")
+                    val betakey = db.find(eq("mc", "${player.uniqueId}")).first()
+                    if(!betakey.equals("true")) {
+                        player.kick(Component.text("§cDu besitzt keinen Betakey"))
+                    }
+                    Bukkit.getScheduler().cancelTask(taskID)
+                }
+            }, 0,20)
+        } else if(resaults["linked"] == null) {
+            notRegistered.add(player)
+            val component: TextComponent = TextComponent("${resaults["key"]}")
+            component.isBold = true
+            component.color = ChatColor.GREEN
+            component.clickEvent = ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, generatedString)
+            component.setHoverEvent(
+                HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
+                    ComponentBuilder("Click to Copy!").color(net.md_5.bungee.api.ChatColor.GRAY).create()
+                )
+            )
+            notRegistered.add(player)
+            player.sendMessage("§8--------------------------------------------------")
+            player.sendMessage(Vars.PREFIX + "§cOoops §7Du musst zu erst dein Account verifzieren\n" +
+                    "§7sende Folgenden Code an unseren Discord Bot")
+            player.sendMessage(component)
             player.sendMessage("§8--------------------------------------------------")
             taskID = Bukkit.getScheduler().scheduleSyncRepeatingTask(Wolkenlobby.plugin, Runnable{
                 val resaults = db.find(eq("mc", "${player.uniqueId}")).first()
-                if(resaults != null) {
-                    player.removePotionEffect(PotionEffectType.BLINDNESS)
-                    player.removePotionEffect(PotionEffectType.SLOW)
+                if(resaults?.get("linked") != null) {
+                    notRegistered.remove(player)
                     player.sendMessage("§8--------------------------------------------------")
                     player.sendMessage(Vars.PREFIX + "§7Danke das du dein Minecraft Account mit Discord verbunden hast!\n" +
-                            "§7Verbundener Discord Account: §a ${resaults["dcname"]}")
+                            "§7Verbundener Discord Account: §a ${resaults["dc-name"]}")
                     player.sendMessage("§8--------------------------------------------------")
-                    Bukkit.getScheduler().cancelTask(taskID)
-                    val resault2 = betakey.find(eq("dc", resaults["dc"])).first()
-                    if(resault2 == null) {
+                    val betakey = db.find(eq("mc", "${player.uniqueId}")).first()
+                    if(!betakey["activated"]?.equals("true")!!) {
                         player.kick(Component.text("§cDu besitzt keinen Betakey"))
                     }
+                    Bukkit.getScheduler().cancelTask(taskID)
                 }
             }, 0,20)
         } else {
-        val resault2 = betakey.find(eq("dc", resaults["dc"])).first()
-        if(resault2 == null) {
-            player.kick(Component.text("§cDu besitzt keinen Betakey"))
-        }
+            val betakey = db.find(eq("mc", "${player.uniqueId}")).first()
+            val act = betakey["activated"]
+            if(act == null) {
+                player.kick(Component.text("§cDu besitzt keinen Betakey"))
+            }
+            Bukkit.getScheduler().cancelTask(taskID)
         }
     }
 
     fun generateStr(): String {
-        val alphabet = "ABCDEFGHIJKLMadaw1234567890-=OPQRSTUVWXYZ"
+        val alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-!@#$%&*()"
         val sb = StringBuilder()
         val random = Random()
         val length = 7
@@ -79,5 +124,12 @@ class JoinListeners : Listener {
             randomString = sb.toString()
         }
         return randomString
+    }
+
+    @EventHandler
+    fun onMove(event: PlayerMoveEvent) {
+        if(notRegistered.contains(event.player)) {
+            event.isCancelled = true
+        }
     }
 }
