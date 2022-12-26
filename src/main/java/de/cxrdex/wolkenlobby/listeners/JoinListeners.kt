@@ -36,7 +36,6 @@ class JoinListeners : Listener {
         val resaults = db.find(eq("mc", "${player.uniqueId}")).first()
         if(resaults == null) {
             notRegistered.add(player)
-            player.viewDistance = 1
             val component: TextComponent = TextComponent("${generatedString}")
             component.isBold = true
             component.color = ChatColor.GREEN
@@ -58,7 +57,6 @@ class JoinListeners : Listener {
                 val resaults = db.find(eq("mc", "${player.uniqueId}")).first()
                 if(resaults["linked"] != null) {
                     notRegistered.remove(player)
-                    player.viewDistance = 100
                     player.sendMessage("§8--------------------------------------------------")
                     player.sendMessage(Vars.PREFIX + "§7Danke das du dein Minecraft Account mit Discord verbunden hast!\n" +
                             "§7Verbundener Discord Account: §a ${resaults["dc-name"]}")

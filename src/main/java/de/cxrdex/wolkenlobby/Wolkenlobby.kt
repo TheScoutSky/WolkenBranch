@@ -1,8 +1,10 @@
 package de.cxrdex.wolkenlobby
 
+import de.cxrdex.wolkenlobby.listeners.ChatListeners
 import de.cxrdex.wolkenlobby.listeners.JoinListeners
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
+
 
 class Wolkenlobby : JavaPlugin() {
 
@@ -18,6 +20,7 @@ class Wolkenlobby : JavaPlugin() {
     fun registerEvents() {
         var manager = Bukkit.getPluginManager()
         manager.registerEvents(JoinListeners(), this)
+        manager.registerEvents(ChatListeners(), this)
     }
 
 }
