@@ -5,6 +5,7 @@ import com.mongodb.client.model.Filters.eq
 import de.cxrdex.wolkenlobby.Wolkenlobby
 import de.cxrdex.wolkenlobby.utils.Vars
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.Adventure
 import net.md_5.bungee.api.ChatColor
 import net.md_5.bungee.api.chat.ClickEvent
 import net.md_5.bungee.api.chat.ComponentBuilder
@@ -46,9 +47,8 @@ class JoinListeners : Listener {
                     ComponentBuilder("Click to Copy!").color(net.md_5.bungee.api.ChatColor.GRAY).create()
                 )
             )
-
             player.sendMessage("§8--------------------------------------------------")
-            player.sendMessage(Vars.PREFIX + "§cOoops §7Du musst zu erst dein Account verifzieren\n" +
+            player.sendMessage(Vars.PREFIX + "<gradient:red:#bd6a17>Oops</gradient> §7Du musst zu erst dein Account verifzieren\n" +
                     "§7sende Folgenden Code an unseren Discord Bot")
             player.sendMessage(component)
             player.sendMessage("§8--------------------------------------------------")
